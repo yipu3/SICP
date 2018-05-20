@@ -43,3 +43,7 @@
 x
 (car x)
 (deep-reverse x)
+
+(cons (list 1 2) (list 3 4))
+(cons 1 '())
+(list 1 2)
