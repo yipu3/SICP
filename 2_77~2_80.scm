@@ -85,6 +85,13 @@
 
 (install-polar-package)
 
+(define (gcd a b)
+    (if (= a 0)
+        b
+        (gcd (remainder b a) a)))
+
+(gcd 4 2)
+
 (define (install-rectangular-package)
     (define (real-part z) (car z))
     (define (imag-part z) (cdr z))
@@ -140,6 +147,58 @@
 
 (install-scheme-number-package)
 (add (make-scheme-number 1) (make-scheme-number 2))
+
+(define (install-rational-package)
+    (define (numer x) (car x))
+    (define (denom x) (cdr x))
+    (define (make-rat n d)
+        (let ((g (gcd n d)))
+            (cons (/ n g) (/ d g))))
+    (define (add-rat x y)
+        (make-rat 
+            (+ (* (numer x) (denom y)) 
+               (* (numer y) (denom x)))
+            (* (denom x) (denom y))))
+    (define (sub-rat x y)
+        (make-rat 
+            (- (* (numer x) (denom y)) 
+               (* (numer y) (denom x)))
+            (* (denom x) (denom y))))
+    (define (mul-rat x y)
+        (make-rat 
+            (* (numer x) (numer y))
+            (* (denom x) (denom y))))
+    (define (div-rat x y)
+        (make-rat
+            (* (numer x) (denom y))
+            (* (denom x) (numer y))))
+
+    (define (tag x) (attach-tag 'rational x))
+    (put 'add '(rational rational)
+        (lambda (x y) (tag (add-rat x y))))
+    (put 'sub '(rational rational)
+        (lambda (x y) (tag (sub-rat x y))))
+    (put 'mul '(rational rational)
+        (lambda (x y) (tag (mul-rat x y))))
+    (put 'div '(rational rational)
+        (lambda (x y) (tag (div-rat x y))))
+    (put 'equ? '(rational rational)
+        (lambda (x y) (and (= (numer x) (numer y)) (= (denom x) (denom y)))))
+    (put '=zero? '(rational)
+        (lambda (x) (not (= (numer x) 0))))
+    (put 'make 'rational
+        (lambda (n d) (tag (make-rat n d))))
+    'done
+ )
+
+ (install-rational-package)
+
+ (define (make-rational n d)
+     ((get 'make 'rational) n d))
+
+(define a (make-rational 2 4))
+(define b (make-rational 1 2))
+(equ? a b)
 
 (define (install-complex-package)
     (define (make-from-real-imag x y)
