@@ -1,0 +1,37 @@
+(define (make-account balance password)
+    (define (withdraw amount)
+        (if (>= balance amount)
+            (begin (set! balance (- balance amount)) balance)
+            "Insufficient funds"))
+    (define (deposit amount)
+        (set! balance (+ balance amount))
+        balance)
+    (define (check-pwd)
+        #t)
+    (define (dispatch m)
+        (cond 
+            ((eq? m 'withdraw) withdraw)
+            ((eq? m 'deposit) deposit)
+            ((eq? m 'check) check)
+            (else (error "Unknown request -- MAKE_ACCOUNT" m))))
+    (define (dispatch_pwd in_pwd m)
+        (if (eq? in_pwd password)
+            (dispatch m)
+            (error "Incorrect password")))
+    dispatch_pwd
+)
+
+(define (make-joint acc old-passwd new-passwd)
+    (lambda (in_pwd op) 
+        (if (eq? in_pwd new-passwd)
+            (acc old-passwd op)
+            (error "Incorrect passwd -- JOINT-ACCOUNT"))))
+
+(define peter-acc (make-account 100 'secret-password))
+((peter-acc 'secret-password 'withdraw) 40)
+((peter-acc 'wrong-pwd 'deposit) 10)
+
+(define paul-acc (make-joint peter-acc 'secret-password 'rosebud))
+
+((paul-acc 'rosebud 'withdraw) 40)
+((peter-acc 'secret-password 'deposit) 0)

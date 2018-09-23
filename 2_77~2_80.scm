@@ -14,6 +14,8 @@
     (set! global-array (put-helper (list op type) global-array)))
 
 (define (get op type)
+    (newline)
+    (display (list op type))
     (define (get-helper k array)
         (cond 
             ((null? array) #f)
@@ -56,6 +58,7 @@
 (define (div x y) (apply-generic 'div x y))
 (define (equ? x y) (apply-generic 'equ? x y))
 (define (=zero? x) (apply-generic '=zero? x))
+(define (raise x) (apply-generic 'raise x))
 
 (define (install-polar-package)
     (define (magnitude z) (car z))
@@ -125,6 +128,7 @@
 (define (magnitude z) (apply-generic 'magnitude z))
 (define (angle z) (apply-generic 'angle z))
 
+
 (define (install-scheme-number-package)
     (define (tag x)
         (attach-tag 'scheme-number x))
@@ -140,6 +144,7 @@
         (lambda (x) (tag x)))
     (put 'equ? '(scheme-number scheme-number) (lambda (x y) (= x y)))
     (put '=zero? '(scheme-number) (lambda (x) (= x 0)))
+    (put 'raise '(scheme-number) (lambda (s) (make-rational s 1)))
 'done)
 
 (define (make-scheme-number n)
@@ -188,6 +193,10 @@
         (lambda (x) (not (= (numer x) 0))))
     (put 'make 'rational
         (lambda (n d) (tag (make-rat n d))))
+    (put 'raise '(rational)
+        (lambda (x) 
+            (make-complex-from-real-imag 
+                (/ (numer x) (denom x)) 0)))
     'done
  )
 
@@ -207,6 +216,9 @@
         ((get 'make-from-mag-ang 'polar) r a))
 
     (define (add-complex z1 z2)
+        (newline)
+        (display 'add!!)
+        (display (list z1 z2))
         (make-from-real-imag
             (+ (real-part z1) (real-part z2))
             (+ (imag-part z1) (imag-part z2))))
@@ -274,3 +286,56 @@
 (=zero? a)
 (define c (make-complex-from-real-imag 0 0))
 (=zero? c)
+(raise (raise 2))
+
+(add a b)
+
+(define (accumulate op init l)
+    (if (null? l)
+        init
+        (op (car l) (accumulate op init (cdr l)))))
+
+(define (min-level args)
+    (accumulate min 100 (map level args)))
+
+(define (same-args args)
+    (display newline)
+    (display args)
+    (define (all-equal num args)
+        (if (= args '())
+            #t
+            (if (equal? (car args) num)
+                (all-equal num (cdr args))
+                #f)))
+    (all-equal (car args) args))
+
+(define (level tag)
+    (cond 
+        ((equal? tag 'complex) 0)
+        ((equal? tag 'rational) 1)
+        ((equal? tag 'scheme-number) 2)
+        (else (display 'no-type!!!))))
+
+(define (raise-to l x)
+    (if (equal? (level (type-tag x)) l)
+        x
+        (raise-to l (raise x))))
+
+(define (apply-generic-same op . args)
+    ;(display '!)
+    (let ((type-tags (map type-tag args)))
+        (let ((proc (get op type-tags)))
+            (if proc 
+                (apply proc (map contents args))
+                (error 
+                    "No method for these types -- APPLY-GENERIC"
+                    (list op type-tags))))))
+
+(define (apply-generic op . args)
+    (if (same-args (map type-tag args))
+        (apply-generic-same op args)
+        (let ((raise-to-level (min-level (map type-tag args))))
+            (let ((raised-args (map (lambda (x) (raise-to raise-to-level x)) args)))
+                (apply-generic-same op raised-args)))))
+
+(add (make-complex-from-real-imag 3 4) (make-complex-from-real-imag 5 6))
